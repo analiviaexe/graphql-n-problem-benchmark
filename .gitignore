@@ -11,5 +11,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Downloads de Arquivos Brutos e Resultados
+importer/downloads/
+benchmarks/results/
+
 .agents/*
 _bmad/*

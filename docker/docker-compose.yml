@@ -1,0 +1,32 @@
+networks:
+  graphql-bench-net:
+    driver: bridge
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres-bench
+    restart: always
+    environment:
+      POSTGRES_DB: imdb_bench
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:z
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '1.0'
+          memory: 512M
+    networks:
+      - graphql-bench-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d imdb_bench" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
