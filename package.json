@@ -2,9 +2,21 @@
   "name": "graphql-n-problem-bench",
   "type": "module",
   "scripts": {
+    "start": "node src/server.js",
+    "start:baseline": "RESOLVER_TYPE=baseline node src/server.js",
+    "start:dataloader": "RESOLVER_TYPE=dataloader node src/server.js",
     "db:import": "node --max-old-space-size=512 importer/import.js"
   },
   "dependencies": {
+    "@apollo/server": "^4.11.0",
+    "cors": "^2.8.5",
+    "dataloader": "^2.2.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "graphql": "^16.8.1",
     "pg": "^8.11.5"
+  },
+  "allowScripts": {
+    "@apollo/protobufjs@1.2.8": true
   }
 }
