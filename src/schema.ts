@@ -39,7 +39,7 @@ export const typeDefs = `#graphql
   }
 
   type Query {
-    titles(limit: Int = 20, offset: Int = 0): [Title!]!
-    title(tconst: ID!): Title
+    getTitles(limit: Int = 20, offset: Int = 0): [Title!]!
+    getTitleById(tconst: ID!): Title
   }
 `;

@@ -2,10 +2,13 @@
   "name": "graphql-n-problem-bench",
   "type": "module",
   "scripts": {
-    "start": "node src/server.js",
-    "start:baseline": "RESOLVER_TYPE=baseline node src/server.js",
-    "start:dataloader": "RESOLVER_TYPE=dataloader node src/server.js",
-    "db:import": "node --max-old-space-size=512 importer/import.js"
+    "compile": "tsc",
+    "start": "npm run compile && node dist/server.js",
+    "start:baseline": "npm run compile && RESOLVER_TYPE=baseline node dist/server.js",
+    "start:dataloader": "npm run compile && RESOLVER_TYPE=dataloader node dist/server.js",
+    "start:joinmonster": "npm run compile && RESOLVER_TYPE=joinmonster node dist/server.js",
+    "db:import": "node --max-old-space-size=512 importer/import.js",
+    "test:parity": "node benchmarks/validate-parity.js"
   },
   "dependencies": {
     "@apollo/server": "^4.11.0",
@@ -14,7 +17,15 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "graphql": "^16.8.1",
+    "join-monster": "^4.0.1",
     "pg": "^8.11.5"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.12.7",
+    "@types/pg": "^8.11.5",
+    "typescript": "^5.4.5"
   },
   "allowScripts": {
     "@apollo/protobufjs@1.2.8": true
