@@ -19,27 +19,37 @@ const QUERIES = {
     `,
   },
   level2: {
-    name: 'Nível 2 (Titles -> Rating)',
+    name: 'Nível 2 (Titles -> Rating + Principals)',
     query: `
       query Level2 {
         getTitles(limit: 5) {
           tconst
           primary_title
+          start_year
           rating {
             average_rating
             num_votes
+          }
+          principals {
+            ordering
+            category
           }
         }
       }
     `,
   },
   level3: {
-    name: 'Nível 3 (Titles -> Principals -> Name)',
+    name: 'Nível 3 (Titles -> Rating + Principals -> Name)',
     query: `
       query Level3 {
         getTitles(limit: 5) {
           tconst
           primary_title
+          start_year
+          rating {
+            average_rating
+            num_votes
+          }
           principals {
             ordering
             category
@@ -52,12 +62,17 @@ const QUERIES = {
     `,
   },
   level4: {
-    name: 'Nível 4 (Titles -> Principals -> Name -> KnownForTitles)',
+    name: 'Nível 4 (Titles -> Rating + Principals -> Name -> KnownForTitles)',
     query: `
       query Level4 {
         getTitles(limit: 5) {
           tconst
           primary_title
+          start_year
+          rating {
+            average_rating
+            num_votes
+          }
           principals {
             ordering
             category
