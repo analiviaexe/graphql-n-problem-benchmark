@@ -38,3 +38,5 @@ CREATE TABLE IF NOT EXISTS principals (
 CREATE INDEX IF NOT EXISTS idx_principals_tconst ON principals(tconst);
 CREATE INDEX IF NOT EXISTS idx_principals_nconst ON principals(nconst);
 CREATE INDEX IF NOT EXISTS idx_ratings_tconst ON ratings(tconst);
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;

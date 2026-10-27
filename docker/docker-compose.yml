@@ -2,6 +2,9 @@ networks:
   graphql-bench-net:
     driver: bridge
 
+volumes:
+  pgdata:
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -13,7 +16,13 @@ services:
       POSTGRES_PASSWORD: postgrespassword
     ports:
       - "5432:5432"
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+      -c pg_stat_statements.max=10000
     volumes:
+      - pgdata:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:z
     deploy:
       resources:
@@ -30,3 +39,116 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  app-baseline:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: graphql-bench-app
+    container_name: app-baseline
+    environment:
+      RESOLVER_TYPE: baseline
+      PORT: 4001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: imdb_bench
+      DB_USER: postgres
+      DB_PASSWORD: postgrespassword
+    ports:
+      - "4001:4001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '1.0'
+          memory: 512M
+    networks:
+      - graphql-bench-net
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:4001/health || exit 1" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app-dataloader:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: graphql-bench-app
+    container_name: app-dataloader
+    environment:
+      RESOLVER_TYPE: dataloader
+      PORT: 4002
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: imdb_bench
+      DB_USER: postgres
+      DB_PASSWORD: postgrespassword
+    ports:
+      - "4002:4002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '1.0'
+          memory: 512M
+    networks:
+      - graphql-bench-net
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:4002/health || exit 1" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app-joinmonster:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: graphql-bench-app
+    container_name: app-joinmonster
+    environment:
+      RESOLVER_TYPE: joinmonster
+      PORT: 4003
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: imdb_bench
+      DB_USER: postgres
+      DB_PASSWORD: postgrespassword
+    ports:
+      - "4003:4003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '1.0'
+          memory: 512M
+    networks:
+      - graphql-bench-net
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:4003/health || exit 1" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  k6:
+    image: grafana/k6:1.8.1
+    profiles: [ "tools" ]
+    volumes:
+      - ../benchmarks:/benchmarks:ro,z
+    networks:
+      - graphql-bench-net

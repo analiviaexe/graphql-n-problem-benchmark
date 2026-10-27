@@ -1,6 +1,5 @@
 import DataLoader from 'dataloader';
 
-// Interface das linhas da tabela 'titles' no PostgreSQL
 export interface TitleRow {
   tconst: string;
   title_type: string | null;
@@ -13,14 +12,12 @@ export interface TitleRow {
   genres: string | null;
 }
 
-// Interface das linhas da tabela 'ratings' no PostgreSQL
 export interface RatingRow {
   tconst: string;
   average_rating: number | null;
   num_votes: number | null;
 }
 
-// Interface das linhas da tabela 'principals' no PostgreSQL
 export interface PrincipalRow {
   tconst: string;
   ordering: number;
@@ -30,7 +27,6 @@ export interface PrincipalRow {
   characters: string | null;
 }
 
-// Interface das linhas da tabela 'names' no PostgreSQL
 export interface NameRow {
   nconst: string;
   primary_name: string;
@@ -39,7 +35,6 @@ export interface NameRow {
   primary_profession: string | null;
 }
 
-// Interface do mapa de DataLoaders
 export interface DataLoaders {
   ratingLoader: DataLoader<string, RatingRow | null>;
   principalsLoader: DataLoader<string, PrincipalRow[]>;
@@ -47,7 +42,6 @@ export interface DataLoaders {
   knownForTitlesLoader: DataLoader<string, TitleRow[]>;
 }
 
-// Interface do Contexto do Apollo Server
 export interface GraphQLContext {
   loaders?: DataLoaders;
 }
