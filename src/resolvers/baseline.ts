@@ -3,7 +3,7 @@ import { TitleRow, RatingRow, PrincipalRow, NameRow } from '../types/index.js';
 
 export const baselineResolvers = {
   Query: {
-    getTitles: async (_parent: unknown, { limit = 20, offset = 0 }: { limit?: number; offset?: number }) => {
+    getTitles: async (_parent: unknown, { limit = 50, offset = 0 }: { limit?: number; offset?: number }) => {
       const query = 'SELECT * FROM titles ORDER BY tconst LIMIT $1 OFFSET $2';
       const res = await db.query<TitleRow>(query, [limit, offset]);
       return res.rows;

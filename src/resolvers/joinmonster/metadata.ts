@@ -110,7 +110,7 @@ export function attachJoinMonsterMetadata(schema: GraphQLSchema): void {
                 ...fields.getTitles.extensions,
                 joinMonster: {
                     orderBy: { tconst: 'asc' },
-                    limit: (args: any) => args.limit || 20,
+                    limit: (args: any) => args.limit || 50,
                     offset: (args: any) => args.offset || 0,
                 },
             };
