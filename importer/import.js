@@ -8,7 +8,8 @@ import pg from 'pg';
 const { Pool } = pg;
 
 const DOWNLOAD_DIR = path.resolve('importer', 'downloads');
-const TARGET_TITLES_LIMIT = 100000;
+const START_YEAR_MIN = 2010;
+const START_YEAR_MAX = 2015;
 const BATCH_SIZE = 500;
 
 const DB_CONFIG = {
@@ -103,7 +104,6 @@ async function runImport() {
     await pool.query('TRUNCATE TABLE principals, ratings, titles, names CASCADE;');
     await pool.query('ALTER TABLE principals DROP CONSTRAINT IF EXISTS principals_nconst_fkey;');
 
-    // 1. titles
     const titlesStream = readline.createInterface({
       input: fs.createReadStream(path.join(DOWNLOAD_DIR, FILES.titleBasics.filename)).pipe(zlib.createGunzip()),
       crlfDelay: Infinity,
@@ -115,7 +115,6 @@ async function runImport() {
 
     for await (const line of titlesStream) {
       if (isHeader) { isHeader = false; continue; }
-      if (titleCount >= TARGET_TITLES_LIMIT) break;
 
       const tab1 = line.indexOf('\t');
       if (tab1 === -1) continue;
@@ -123,6 +122,8 @@ async function runImport() {
 
       const cols = line.split('\t');
       if (cols[1] !== 'movie') continue;
+      const startYear = parseIntNullable(cols[5]);
+      if (startYear === null || startYear < START_YEAR_MIN || startYear > START_YEAR_MAX) continue;
 
       targetTitles.add(tconst);
       titleBatch.push([
@@ -142,7 +143,6 @@ async function runImport() {
     }
     console.log(`[1/4] Titles: ${titleCount} inseridos.`);
 
-    // 2. ratings
     const ratingsStream = readline.createInterface({
       input: fs.createReadStream(path.join(DOWNLOAD_DIR, FILES.titleRatings.filename)).pipe(zlib.createGunzip()),
       crlfDelay: Infinity,
@@ -173,7 +173,6 @@ async function runImport() {
     }
     console.log(`[2/4] Ratings: ${ratingsCount} inseridos.`);
 
-    // 3. Inserir principals e mapear targetNames
     const insertPrincipalsStream = readline.createInterface({
       input: fs.createReadStream(path.join(DOWNLOAD_DIR, FILES.titlePrincipals.filename)).pipe(zlib.createGunzip()),
       crlfDelay: Infinity,
@@ -205,7 +204,6 @@ async function runImport() {
     }
     console.log(`[3/4] Principals: ${principalsCount} inseridos.`);
 
-    // 4. Inserir names
     const namesStream = readline.createInterface({
       input: fs.createReadStream(path.join(DOWNLOAD_DIR, FILES.nameBasics.filename)).pipe(zlib.createGunzip()),
       crlfDelay: Infinity,
@@ -236,18 +234,15 @@ async function runImport() {
     }
     console.log(`[4/4] Names: ${namesCount} inseridos.`);
 
-    // 5. Limpar registros de elenco órfãos (onde o ator não possui entrada cadastrada em name.basics.tsv)
     console.log('Limpando registros de elenco órfãos e reativando chaves estrangeiras...');
     await pool.query('DELETE FROM principals WHERE NOT EXISTS (SELECT 1 FROM names WHERE names.nconst = principals.nconst);');
 
-    // 6. Re-adicionar a constraint de chave estrangeira em principals
     await pool.query('ALTER TABLE principals ADD CONSTRAINT principals_nconst_fkey FOREIGN KEY (nconst) REFERENCES names(nconst) ON DELETE CASCADE;');
 
-    console.log('\n🎉 Importação concluída com sucesso!');
+    console.log('Importação concluída');
   } catch (err) {
     if (err.message.includes('unexpected end of file') || err.code === 'Z_BUF_ERROR') {
-      console.error('\n⚠️ Arquivo compactado corrompido detectado. Apagando pasta de downloads para recarregar limpo...');
-      fs.rmSync(DOWNLOAD_DIR, { recursive: true, force: true });
+      console.error('Arquivo compactado corrompido. Confira com: cd importer/downloads && sha256sum -c ../SHA256SUMS');
     } else {
       console.error('Erro na importação:', err.message);
     }

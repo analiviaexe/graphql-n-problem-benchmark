@@ -1,94 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 import assert from 'assert';
+import { buildQueries } from './queries.js';
 
 const FIXTURES_DIR = path.resolve('benchmarks/fixtures');
 const SNAPSHOT_FILE = path.join(FIXTURES_DIR, 'baseline-reference.json');
 
-const QUERIES = {
-  level1: {
-    name: 'Nível 1 (Titles)',
-    query: `
-      query Level1 {
-        getTitles(limit: 5) {
-          tconst
-          primary_title
-          start_year
-        }
-      }
-    `,
-  },
-  level2: {
-    name: 'Nível 2 (Titles -> Rating + Principals)',
-    query: `
-      query Level2 {
-        getTitles(limit: 5) {
-          tconst
-          primary_title
-          start_year
-          rating {
-            average_rating
-            num_votes
-          }
-          principals {
-            ordering
-            category
-          }
-        }
-      }
-    `,
-  },
-  level3: {
-    name: 'Nível 3 (Titles -> Rating + Principals -> Name)',
-    query: `
-      query Level3 {
-        getTitles(limit: 5) {
-          tconst
-          primary_title
-          start_year
-          rating {
-            average_rating
-            num_votes
-          }
-          principals {
-            ordering
-            category
-            name {
-              primary_name
-            }
-          }
-        }
-      }
-    `,
-  },
-  level4: {
-    name: 'Nível 4 (Titles -> Rating + Principals -> Name -> KnownForTitles)',
-    query: `
-      query Level4 {
-        getTitles(limit: 5) {
-          tconst
-          primary_title
-          start_year
-          rating {
-            average_rating
-            num_votes
-          }
-          principals {
-            ordering
-            category
-            name {
-              primary_name
-              known_for_titles {
-                tconst
-                primary_title
-              }
-            }
-          }
-        }
-      }
-    `,
-  },
-};
+const QUERIES = buildQueries(5);
 
 async function executeQuery(url, query) {
   const response = await fetch(url, {
@@ -115,17 +33,17 @@ async function main() {
   const urlArg = args.find((a) => a.startsWith('--url='));
   const targetUrl = urlArg ? urlArg.split('=')[1] : process.env.GRAPHQL_URL || 'http://localhost:4000/graphql';
 
-  console.log(`\n🔍 Alvo GraphQL: ${targetUrl}`);
+  console.log(`Alvo: ${targetUrl}`);
 
   if (isGenerate) {
-    console.log(`📸 Modo: GERAÇÃO DO SNAPSHOT DE REFERÊNCIA (Golden Master)\n`);
+    console.log('Gerando gabarito a partir desta estratégia');
     const snapshot = {};
 
     for (const [levelKey, { name, query }] of Object.entries(QUERIES)) {
-      process.stdout.write(`⏳ Executando ${name}... `);
+      process.stdout.write(`${name}... `);
       const data = await executeQuery(targetUrl, query);
       snapshot[levelKey] = data;
-      console.log('✅ OK');
+      console.log('ok');
     }
 
     if (!fs.existsSync(FIXTURES_DIR)) {
@@ -133,15 +51,15 @@ async function main() {
     }
 
     fs.writeFileSync(SNAPSHOT_FILE, JSON.stringify(snapshot, null, 2), 'utf-8');
-    console.log(`\n🎉 Snapshot salvo com sucesso em: ${SNAPSHOT_FILE}\n`);
+    console.log(`Gabarito salvo em ${SNAPSHOT_FILE}`);
     process.exit(0);
   }
 
-  console.log(`⚖️ Modo: VALIDAÇÃO DE PARIDADE CONTRA O GABARITO\n`);
+  console.log('Comparando com o gabarito');
 
   if (!fs.existsSync(SNAPSHOT_FILE)) {
-    console.error(`❌ Erro: Arquivo de gabarito não encontrado: ${SNAPSHOT_FILE}`);
-    console.error(`👉 Execute primeiro com o Baseline ativo: npm run test:parity -- --generate-snapshot\n`);
+    console.error(`Gabarito não encontrado: ${SNAPSHOT_FILE}`);
+    console.error('Gere com o Baseline ativo: npm run test:parity -- --generate-snapshot');
     process.exit(1);
   }
 
@@ -149,30 +67,30 @@ async function main() {
   let allPassed = true;
 
   for (const [levelKey, { name, query }] of Object.entries(QUERIES)) {
-    process.stdout.write(`🔎 Comparando ${name}... `);
+    process.stdout.write(`${name}... `);
     const expected = referenceSnapshot[levelKey];
 
     try {
       const actual = await executeQuery(targetUrl, query);
       assert.deepStrictEqual(actual, expected);
-      console.log('✅ 100% IDÊNTICO (Paridade confirmada)');
+      console.log('idêntico');
     } catch (err) {
       allPassed = false;
-      console.log('❌ DIVERGÊNCIA DETECTADA');
-      console.error(`   Detalhes: ${err.message}`);
+      console.log('DIVERGENTE');
+      console.error(err.message);
     }
   }
 
   if (allPassed) {
-    console.log(`\n🏆 SUCESSO TOTAL: Todos os níveis retornaram payloads 100% idênticos ao Golden Master!\n`);
+    console.log('Paridade confirmada nos 4 níveis');
     process.exit(0);
   } else {
-    console.error(`\n💥 FALHA DE PARIDADE: Há divergências entre a abordagem atual e o gabarito.\n`);
+    console.error('Falha de paridade');
     process.exit(1);
   }
 }
 
 main().catch((err) => {
-  console.error(`\n❌ Falha inesperada:`, err);
+  console.error(err);
   process.exit(1);
 });
