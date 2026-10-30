@@ -11,6 +11,3 @@ yarn-error.log*
 
 importer/downloads/
 benchmarks/results/
-
-.agents/*
-_bmad/*
