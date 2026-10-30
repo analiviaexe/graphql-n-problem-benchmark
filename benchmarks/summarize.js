@@ -85,7 +85,7 @@ function writeCsv(file, data) {
 
 writeCsv(path.join(runDir, 'consolidado.csv'), rows);
 
-const metrics = ['p50_ms', 'p95_ms', 'p99_ms', 'vazao_rps', 'app_cpu_perc', 'app_mem_max_mib', 'pg_cpu_perc', 'db_consultas_por_req'];
+const metrics = ['p50_ms', 'p95_ms', 'p99_ms', 'vazao_rps', 'taxa_erro', 'app_cpu_perc', 'app_mem_max_mib', 'pg_cpu_perc', 'db_consultas_por_req', 'db_tempo_total_ms'];
 const groups = Map.groupBy(rows, (r) => `${r.estrategia}|${r.nivel}|${r.vus}`);
 const aggregated = [...groups.values()].map((group) => {
   const row = { estrategia: group[0].estrategia, nivel: group[0].nivel, vus: group[0].vus };
