@@ -6,7 +6,7 @@ import { ApolloServerPluginUsageReportingDisabled } from '@apollo/server/plugin/
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import { typeDefs } from './schema.js';
 import { baselineResolvers } from './resolvers/baseline.js';
-import { dataloaderResolver } from './resolvers/dataloader/dataloader.js';
+import { dataloaderResolvers } from './resolvers/dataloader/dataloader.js';
 import { createLoaders } from './resolvers/dataloader/index.js';
 import { joinMonsterResolvers } from './resolvers/joinmonster/joinmonster.js';
 import { attachJoinMonsterMetadata } from './resolvers/joinmonster/metadata.js';
@@ -17,7 +17,7 @@ const RESOLVER_TYPE = process.env.RESOLVER_TYPE || 'baseline';
 
 const resolversMap: Record<string, any> = {
   baseline: baselineResolvers,
-  dataloader: dataloaderResolver,
+  dataloader: dataloaderResolvers,
   joinmonster: joinMonsterResolvers,
 };
 

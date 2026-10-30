@@ -1,32 +1,23 @@
 import joinMonster from 'join-monster';
 import pool from '../../db.js';
 
-export const joinMonsterResolvers = {
-    Query: {
-        getTitles: async (_parent: unknown, _args: unknown, context: unknown, info: unknown) => {
-            const fn = (joinMonster as any).default || joinMonster;
-            return fn(
-                info,
-                context,
-                async (sql: string) => {
-                    const res = await pool.query(sql);
-                    return res.rows;
-                },
-                { dialect: 'pg' }
-            );
-        },
+const runJoinMonster = (joinMonster as any).default || joinMonster;
 
-        getTitleById: async (_parent: unknown, _args: unknown, context: unknown, info: unknown) => {
-            const fn = (joinMonster as any).default || joinMonster;
-            return fn(
-                info,
-                context,
-                async (sql: string) => {
-                    const res = await pool.query(sql);
-                    return res.rows;
-                },
-                { dialect: 'pg' }
-            );
-        },
+async function resolve(_parent: unknown, _args: unknown, context: unknown, info: unknown) {
+  return runJoinMonster(
+    info,
+    context,
+    async (sql: string) => {
+      const res = await pool.query(sql);
+      return res.rows;
     },
+    { dialect: 'pg' }
+  );
+}
+
+export const joinMonsterResolvers = {
+  Query: {
+    getTitles: resolve,
+    getTitleById: resolve,
+  },
 };

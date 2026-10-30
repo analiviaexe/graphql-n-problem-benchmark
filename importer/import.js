@@ -87,7 +87,6 @@ async function batchInsert(pool, tableName, columns, rows) {
 }
 
 async function runImport() {
-  console.log('Iniciando importação otimizada do IMDb...');
   if (!fs.existsSync(DOWNLOAD_DIR)) fs.mkdirSync(DOWNLOAD_DIR, { recursive: true });
 
   const pool = new Pool(DB_CONFIG);
@@ -234,7 +233,6 @@ async function runImport() {
     }
     console.log(`[4/4] Names: ${namesCount} inseridos.`);
 
-    console.log('Limpando registros de elenco órfãos e reativando chaves estrangeiras...');
     await pool.query('DELETE FROM principals WHERE NOT EXISTS (SELECT 1 FROM names WHERE names.nconst = principals.nconst);');
 
     await pool.query('ALTER TABLE principals ADD CONSTRAINT principals_nconst_fkey FOREIGN KEY (nconst) REFERENCES names(nconst) ON DELETE CASCADE;');

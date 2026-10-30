@@ -36,7 +36,7 @@ async function batchNames(nconsts: readonly string[]): Promise<(NameRow | null)[
 
 async function batchKnownForTitles(nconsts: readonly string[]): Promise<TitleRow[][]> {
   const query = `
-    SELECT DISTINCT p.nconst, t.* 
+    SELECT DISTINCT p.nconst, t.*
     FROM titles t
     JOIN principals p ON t.tconst = p.tconst
     WHERE p.nconst = ANY($1)
