@@ -28,16 +28,14 @@ const stdev = (xs) => {
   return Math.sqrt(xs.reduce((a, x) => a + (x - m) ** 2, 0) / (xs.length - 1));
 };
 
-function dbDelta(dir, vus) {
+function dbTotalMs(dir, vus) {
   const before = new Map(readCsv(path.join(dir, `pgss-${vus}vus-inicio.csv`)).map((r) => [r.queryid, r]));
-  let calls = 0;
   let totalMs = 0;
   for (const r of readCsv(path.join(dir, `pgss-${vus}vus-fim.csv`))) {
     const b = before.get(r.queryid);
-    calls += Number(r.calls) - (b ? Number(b.calls) : 0);
     totalMs += Number(r.total_exec_time) - (b ? Number(b.total_exec_time) : 0);
   }
-  return { calls, totalMs };
+  return totalMs;
 }
 
 const rows = [];
@@ -48,6 +46,7 @@ for (const rep of fs.readdirSync(runDir).filter((d) => d.startsWith('rep')).sort
       const summary = JSON.parse(fs.readFileSync(path.join(dir, 'k6-resumo.json'), 'utf-8'));
       const t0 = Number(fs.readFileSync(path.join(dir, 'inicio.txt'), 'utf-8'));
       const stats = readCsv(path.join(dir, 'docker-stats.csv'));
+      const queriesPerRequest = Number(fs.readFileSync(path.join(dir, 'consultas-por-req.txt'), 'utf-8'));
 
       summary.patamares.forEach((p, i) => {
         const start = t0 + i * summary.duracao_patamar_s + summary.descarte_s;
@@ -55,7 +54,6 @@ for (const rep of fs.readdirSync(runDir).filter((d) => d.startsWith('rep')).sort
         const window = stats.filter((s) => s.timestamp >= start && s.timestamp < end);
         const app = window.filter((s) => s.container === `app-${strategy}`);
         const pg = window.filter((s) => s.container === 'postgres-bench');
-        const db = dbDelta(dir, p.vus);
 
         rows.push({
           repeticao: Number(rep.slice(3)),
@@ -70,8 +68,8 @@ for (const rep of fs.readdirSync(runDir).filter((d) => d.startsWith('rep')).sort
           app_cpu_perc: mean(app.map((s) => parseFloat(s.cpu_perc))),
           app_mem_max_mib: Math.max(...app.map((s) => toMiB(s.mem_usage))),
           pg_cpu_perc: mean(pg.map((s) => parseFloat(s.cpu_perc))),
-          db_consultas_por_req: db.calls / p.requisicoes_ok,
-          db_tempo_total_ms: db.totalMs,
+          db_consultas_por_req: queriesPerRequest,
+          db_tempo_total_ms: dbTotalMs(dir, p.vus),
         });
       });
     }

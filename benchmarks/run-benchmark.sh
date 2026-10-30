@@ -30,6 +30,27 @@ snapshot_pgss() {
   ) TO STDOUT WITH CSV HEADER" > "$1"
 }
 
+contar_consultas() {
+  local estrategia=$1 nivel=$2
+  psql_bench -c "SELECT pg_stat_statements_reset();" > /dev/null
+  URL="http://localhost:${PORTAS[$estrategia]}/graphql" NIVEL="$nivel" node --input-type=module - <<'EOF'
+import { buildQueries } from './benchmarks/queries.js';
+const res = await fetch(process.env.URL, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ query: buildQueries(50)[`level${process.env.NIVEL}`].query }),
+});
+if (!(await res.text()).startsWith('{"data"')) {
+  console.error('Falha na requisição usada para contar as consultas');
+  process.exit(1);
+}
+EOF
+  psql_bench -c "SELECT coalesce(sum(calls), 0)
+    FROM pg_stat_statements
+    WHERE dbid = (SELECT oid FROM pg_database WHERE datname = 'imdb_bench')
+      AND query NOT LIKE '%pg_stat_statements%'"
+}
+
 dormir_ate() {
   local restante=$(( $1 - $(date +%s) ))
   if (( restante > 0 )); then sleep "$restante"; fi
@@ -78,6 +99,7 @@ rodada() {
   "${COMPOSE[@]}" up -d --wait postgres "app-${estrategia}" > /dev/null
 
   rodar_k6 "$estrategia" "$nivel" warmup > /dev/null
+  contar_consultas "$estrategia" "$nivel" > "$dir/consultas-por-req.txt"
   psql_bench -c "SELECT pg_stat_statements_reset();" > /dev/null
 
   coletar_docker_stats "$dir/docker-stats.csv" "app-${estrategia}" postgres-bench &
@@ -106,9 +128,6 @@ docker info > /dev/null
 
 mkdir -p "$RESULTADOS"
 {
-  echo "data=$(date --iso-8601=seconds)"
-  echo "commit=$(git rev-parse HEAD)"
-  echo "alteracoes_nao_commitadas=$(git status --porcelain | wc -l)"
   echo "repeticoes=$REPETICOES"
   echo "estrategias=$ESTRATEGIAS"
   echo "niveis=$NIVEIS"
@@ -117,7 +136,6 @@ mkdir -p "$RESULTADOS"
   echo "descarte_s=$DESCARTE_S"
   echo "aquecimento_s=$AQUECIMENTO_S"
   echo "aquecimento_vus=$AQUECIMENTO_VUS"
-  echo "pausa_s=$PAUSA_S"
 } > "$RESULTADOS/execucao.txt"
 
 log "Construindo a imagem das aplicações"
