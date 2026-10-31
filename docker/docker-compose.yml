@@ -10,6 +10,7 @@ services:
     image: postgres:16-alpine
     container_name: postgres-bench
     restart: always
+    shm_size: 1gb
     environment:
       POSTGRES_DB: imdb_bench
       POSTGRES_USER: postgres

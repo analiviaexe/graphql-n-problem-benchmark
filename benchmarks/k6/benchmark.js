@@ -21,6 +21,9 @@ const latencia = new Trend('latencia_ms', true);
 const reqOk = new Counter('req_ok');
 const reqFalha = new Counter('req_falha');
 
+const MAX_FALHAS_REGISTRADAS = 3;
+let falhasRegistradas = 0;
+
 function cenarios() {
   if (MODE === 'warmup') {
     return {
@@ -64,10 +67,15 @@ export function setup() {
 export default function () {
   const decorrido = (Date.now() - exec.scenario.startTime) / 1000;
   const res = http.post(TARGET_URL, BODY, PARAMS);
+  const ok = res.status === 200 && typeof res.body === 'string' && res.body.startsWith('{"data"');
+
+  if (!ok && falhasRegistradas < MAX_FALHAS_REGISTRADAS) {
+    falhasRegistradas++;
+    console.error(`falha: status=${res.status} erro=${res.error} corpo=${String(res.body).slice(0, 300)}`);
+  }
 
   if (MODE !== 'test' || decorrido < DESCARTE_S || decorrido >= DURACAO_PATAMAR_S) return;
 
-  const ok = res.status === 200 && typeof res.body === 'string' && res.body.startsWith('{"data"');
   latencia.add(res.timings.duration);
   if (ok) reqOk.add(1);
   else reqFalha.add(1);
