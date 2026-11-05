@@ -54,22 +54,28 @@ for (const rep of fs.readdirSync(runDir).filter((d) => d.startsWith('rep')).sort
         const window = stats.filter((s) => s.timestamp >= start && s.timestamp < end);
         const app = window.filter((s) => s.container === `app-${strategy}`);
         const pg = window.filter((s) => s.container === 'postgres-bench');
+        const dbMs = dbTotalMs(dir, p.vus);
+        const appCpu = mean(app.map((s) => parseFloat(s.cpu_perc)));
+        const pgCpu = mean(pg.map((s) => parseFloat(s.cpu_perc)));
 
         rows.push({
           repeticao: Number(rep.slice(3)),
           estrategia: strategy,
           nivel: summary.nivel,
           vus: p.vus,
+          media_ms: p.latencia_ms.avg,
           p50_ms: p.latencia_ms.med,
           p95_ms: p.latencia_ms['p(95)'],
           p99_ms: p.latencia_ms['p(99)'],
           vazao_rps: p.vazao_rps,
           taxa_erro: p.taxa_erro,
-          app_cpu_perc: mean(app.map((s) => parseFloat(s.cpu_perc))),
+          app_cpu_perc: appCpu,
           app_mem_max_mib: Math.max(...app.map((s) => toMiB(s.mem_usage))),
-          pg_cpu_perc: mean(pg.map((s) => parseFloat(s.cpu_perc))),
+          pg_cpu_perc: pgCpu,
+          cpu_por_req_ms: ((appCpu + pgCpu) / 100) * 1000 / p.vazao_rps,
           db_consultas_por_req: queriesPerRequest,
-          db_tempo_total_ms: dbTotalMs(dir, p.vus),
+          db_tempo_total_ms: dbMs,
+          db_tempo_por_req_ms: dbMs / p.requisicoes_ok,
         });
       });
     }
@@ -85,7 +91,7 @@ function writeCsv(file, data) {
 
 writeCsv(path.join(runDir, 'consolidado.csv'), rows);
 
-const metrics = ['p50_ms', 'p95_ms', 'p99_ms', 'vazao_rps', 'taxa_erro', 'app_cpu_perc', 'app_mem_max_mib', 'pg_cpu_perc', 'db_consultas_por_req', 'db_tempo_total_ms'];
+const metrics = ['media_ms', 'p50_ms', 'p95_ms', 'p99_ms', 'vazao_rps', 'taxa_erro', 'app_cpu_perc', 'app_mem_max_mib', 'pg_cpu_perc', 'cpu_por_req_ms', 'db_consultas_por_req', 'db_tempo_total_ms', 'db_tempo_por_req_ms'];
 const groups = Map.groupBy(rows, (r) => `${r.estrategia}|${r.nivel}|${r.vus}`);
 const aggregated = [...groups.values()].map((group) => {
   const row = { estrategia: group[0].estrategia, nivel: group[0].nivel, vus: group[0].vus };

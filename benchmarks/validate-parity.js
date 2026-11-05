@@ -6,7 +6,7 @@ import { buildQueries } from './queries.js';
 const FIXTURES_DIR = path.resolve('benchmarks/fixtures');
 const SNAPSHOT_FILE = path.join(FIXTURES_DIR, 'baseline-reference.json');
 
-const QUERIES = buildQueries(5);
+const QUERIES = buildQueries(50);
 
 async function executeQuery(url, query) {
   const response = await fetch(url, {
