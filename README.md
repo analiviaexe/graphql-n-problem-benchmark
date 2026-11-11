@@ -13,8 +13,8 @@ Experimento que mede o impacto do problema N+1 em APIs GraphQL e compara três f
 ### 1. Instalar e importar a base
 
 ```bash
-git clone git@github.com:analiviaexe/graphql-n-problem-bench.git
-cd graphql-n-problem-bench
+git clone git@github.com:analiviaexe/graphql-n-problem-benchmark.git
+cd graphql-n-problem-benchmark
 npm install
 docker compose -f docker/docker-compose.yml up -d postgres
 npm run db:import

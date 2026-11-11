@@ -1,5 +1,5 @@
 {
-  "name": "graphql-n-problem-bench",
+  "name": "graphql-n-problem-benchmark",
   "type": "module",
   "scripts": {
     "compile": "tsc",
